@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InstaParser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#07070f;--surface:#101020;--surface2:#181830;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --accent:#e040fb;--accent2:#00e5ff;--accent-dim:rgba(224,64,251,0.15);
+  --text:#eeeef8;--muted:rgba(238,238,248,0.42);--mono:'JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── Header ── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 28px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:rgba(7,7,15,.96);backdrop-filter:blur(12px);z-index:100
+}
+.logo{font-size:19px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:10px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.logo span{color:var(--accent)}
+.status-pill{
+  font-family:var(--mono);font-size:11px;padding:4px 12px;border-radius:20px;
+  background:var(--surface2);border:1px solid var(--border2);color:var(--muted);
+  transition:all .3s
+}
+.status-pill.active{color:var(--accent2);border-color:var(--accent2)}
+.status-pill.done{color:#4cff91;border-color:#4cff91}
+
+/* ── Input section ── */
+.input-section{padding:28px 28px 0;max-width:900px}
+.input-label{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase}
+.input-row{display:flex;gap:8px}
+.url-input{
+  flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+  padding:13px 16px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;
+  transition:border-color .2s
+}
+.url-input:focus{border-color:var(--accent)}
+.url-input::placeholder{color:var(--muted)}
+.btn{
+  padding:13px 22px;border-radius:8px;border:none;cursor:pointer;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:14px;transition:all .15s
+}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--muted)}
+.btn-outline:hover{border-color:var(--accent2);color:var(--accent2);background:rgba(0,229,255,.06)}
+.btn-download{
+  background:transparent;border:1.5px solid var(--accent2);color:var(--accent2);
+  display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:700
+}
+.btn-download:hover{background:rgba(0,229,255,.1)}
+.btn-download:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── Note banner ── */
+.note{
+  margin:16px 28px;padding:11px 16px;background:rgba(0,229,255,.04);
+  border:1px solid rgba(0,229,255,.18);border-radius:8px;
+  font-family:var(--mono);font-size:11px;color:rgba(0,229,255,.75);line-height:1.7
+}
+.note code{color:var(--accent2)}
+
+/* ── Stats bar ── */
+.stats-bar{
+  display:flex;align-items:center;gap:20px;padding:11px 28px;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  font-family:var(--mono);font-size:12px
+}
+.stat{color:var(--muted)}
+.stat strong{color:var(--text);font-weight:500}
+.stat.hl strong{color:var(--accent)}
+.sep{width:1px;height:14px;background:var(--border2)}
+.stat-actions{margin-left:auto;display:flex;gap:8px}
+
+/* ── Grid area ── */
+.grid-wrap{padding:20px 28px 100px}
+.grid-meta{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;font-family:var(--mono);font-size:11px;color:var(--muted)
+}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+
+/* ── Tile ── */
+.tile{
+  position:relative;aspect-ratio:1;overflow:hidden;border-radius:4px;
+  cursor:pointer;background:var(--surface);border:2px solid transparent;
+  transition:border-color .15s
+}
+.tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+.tile:hover img{transform:scale(1.07)}
+.tile-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,0);
+  transition:background .2s;display:flex;align-items:center;justify-content:center
+}
+.tile:hover .tile-overlay{background:rgba(0,0,0,.28)}
+.tile.selected{border-color:var(--accent)}
+.tile.selected .tile-overlay{background:rgba(224,64,251,.28)}
+.check-icon{
+  width:26px;height:26px;border-radius:50%;background:var(--accent);
+  display:none;align-items:center;justify-content:center;border:2px solid #fff
+}
+.tile.selected .check-icon{display:flex}
+.type-badge{
+  position:absolute;top:5px;right:5px;font-family:var(--mono);font-size:9px;
+  padding:2px 6px;border-radius:3px;font-weight:500;pointer-events:none
+}
+.badge-video{background:rgba(0,0,0,.75);color:var(--accent2);border:1px solid var(--accent2)}
+.badge-carousel{background:rgba(0,0,0,.75);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.tile-sel-count{
+  position:absolute;bottom:5px;left:5px;font-family:var(--mono);font-size:10px;
+  padding:2px 7px;border-radius:3px;background:var(--accent);color:#000;font-weight:500;
+  display:none
+}
+.tile.selected .tile-sel-count{display:block}
+
+/* ── Empty / loading ── */
+.empty-state{text-align:center;padding:70px 28px;color:var(--muted)}
+.empty-glyph{font-size:52px;margin-bottom:16px;opacity:.2;font-family:var(--mono)}
+.empty-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:8px}
+.empty-desc{font-size:13px;font-family:var(--mono)}
+.skeleton{aspect-ratio:1;border-radius:4px;background:var(--surface);animation:pulse 1.6s ease-in-out infinite}
+.skeleton:nth-child(2n){animation-delay:.25s}
+.skeleton:nth-child(3n){animation-delay:.5s}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.75}}
+
+/* ── Modal ── */
+.modal-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);
+  z-index:500;align-items:center;justify-content:center;padding:28px
+}
+.modal-backdrop.open{display:flex}
+.modal{
+  background:var(--surface);border-radius:12px;border:1px solid var(--border2);
+  width:100%;max-width:680px;max-height:82vh;overflow:hidden;display:flex;flex-direction:column
+}
+.modal-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border)
+}
+.modal-title{font-size:14px;font-weight:700}
+.modal-sub{font-size:11px;font-family:var(--mono);color:var(--muted);margin-top:3px}
+.modal-close{
+  width:30px;height:30px;border-radius:6px;background:transparent;
+  border:1px solid var(--border2);color:var(--text);cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:-2px
+}
+.modal-close:hover{background:var(--surface2)}
+.modal-body{overflow-y:auto;padding:16px;flex:1}
+.modal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.modal-item{
+  position:relative;aspect-ratio:1;overflow:hidden;border-radius:8px;
+  cursor:pointer;border:2px solid transparent;transition:border-color .15s
+}
+.modal-item.selected{border-color:var(--accent)}
+.modal-item img{width:100%;height:100%;object-fit:cover}
+.modal-overlay{
+  position:absolute;inset:0;background:rgba(224,64,251,0);
+  transition:background .15s;display:flex;align-items:center;justify-content:center
+}
+.modal-item:hover .modal-overlay{background:rgba(0,0,0,.25)}
+.modal-item.selected .modal-overlay{background:rgba(224,64,251,.3)}
+.modal-check{
+  width:22px;height:22px;border-radius:50%;background:var(--accent);
+  display:none;align-items:center;justify-content:center
+}
+.modal-item.selected .modal-check{display:flex}
+.modal-vbadge{
+  position:absolute;bottom:6px;left:6px;font-family:var(--mono);font-size:9px;
+  padding:2px 6px;border-radius:3px;background:rgba(0,0,0,.75);
+  color:var(--accent2);border:1px solid var(--accent2)
+}
+.modal-footer{
+  padding:14px 20px;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between
+}
+.modal-count{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.modal-count strong{color:var(--accent)}
+
+/* ── Bottom bar ── */
+.bottom-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  padding:14px 28px;background:rgba(7,7,15,.97);backdrop-filter:blur(12px);
+  border-top:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:space-between;
+  transform:translateY(100%);transition:transform .3s ease;z-index:200
+}
+.bottom-bar.visible{transform:translateY(0)}
+.bottom-info{font-family:var(--mono);font-size:13px}
+.bottom-info strong{color:var(--accent);font-size:15px}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:80px;right:28px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:8px;padding:11px 16px;font-family:var(--mono);font-size:12px;
+  z-index:600;transform:translateX(240%);transition:transform .3s ease;color:var(--text)
+}
+.toast.show{transform:translateX(0)}
+
+/* ── Progress overlay ── */
+.progress-bar{
+  height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  width:0%;transition:width .3s;position:fixed;top:0;left:0;z-index:999
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Insta<span>Parser</span>
+  </div>
+  <div id="statusPill" class="status-pill">— čakám —</div>
+</header>
+
+<div class="input-section">
+  <div class="input-label">Instagram URL účtu</div>
+  <div class="input-row">
+    <input type="text" class="url-input" id="urlInput"
+      placeholder="https://www.instagram.com/username/"
+    />
+    <button class="btn btn-primary" id="parseBtn" onclick="startParse()">Parsovať</button>
+  </div>
+</div>
+
+<div class="note">
+  ⚠ <strong>Demo mód</strong> — zobrazujú sa vygenerované mock dáta (reálne obrázky z picsum.photos).
+  Pre produkčné použitie je potrebný backend.<br>
+  Očakávaný endpoint: <code>POST /api/parse</code> → <code>{"account":"…","posts":[…]}</code>
+</div>
+
+<div class="stats-bar" id="statsBar" style="display:none">
+  <span class="stat">Účet: <strong id="sAccount">—</strong></span>
+  <div class="sep"></div>
+  <span class="stat">Príspevky: <strong id="sTotal">0</strong></span>
+  <div class="sep"></div>
+  <span class="stat">Médií celkom: <strong id="sMedia">0</strong></span>
+  <div class="sep"></div>
+  <span class="stat hl">Vybrané: <strong id="sSelected">0</strong></span>
+  <div class="stat-actions">
+    <button class="btn btn-outline" style="padding:6px 14px;font-size:12px" onclick="selectAll()">Vybrať všetky</button>
+    <button class="btn btn-outline" style="padding:6px 14px;font-size:12px" onclick="clearSelection()">Zrušiť výber</button>
+  </div>
+</div>
+
+<div class="grid-wrap" id="mainArea">
+  <div class="empty-state">
+    <div class="empty-glyph">⬡</div>
+    <div class="empty-title">Žiadne dáta</div>
+    <div class="empty-desc">Zadajte URL Instagram účtu a kliknite "Parsovať"</div>
+  </div>
+</div>
+
+<!-- Carousel modal -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="bgClose(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="mTitle">Príspevok s viacerými médiami</div>
+        <div class="modal-sub" id="mSub">Vyberte fotografie/videá na stiahnutie</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid" id="mGrid"></div>
+    </div>
+    <div class="modal-footer">
+      <span class="modal-count">Vybrané: <strong id="mSelCount">0</strong> / <span id="mTotCount">0</span></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" style="padding:8px 14px;font-size:12px" onclick="modalSelectAll()">Všetky</button>
+        <button class="btn btn-outline" style="padding:8px 14px;font-size:12px" onclick="modalClearAll()">Žiadne</button>
+        <button class="btn btn-primary" style="padding:8px 18px;font-size:13px" onclick="closeModal()">Potvrdiť</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom action bar -->
+<div class="bottom-bar" id="bottomBar">
+  <div class="bottom-info">Vybrané: <strong id="bCount">0</strong> položiek</div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-outline" style="padding:10px 16px;font-size:13px" onclick="clearSelection()">Zrušiť výber</button>
+    <button class="btn btn-download" id="dlBtn" onclick="downloadZip()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Stiahnuť .zip
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* ═══════════════ STATE ═══════════════ */
+let posts = [];
+let selected = new Map(); // postId → Set<mediaIndex>
+let activePostId = null;
+let account = '';
+
+/* ═══════════════ MOCK DATA ═══════════════ */
+function makePosts(user) {
+  const types = [
+    'image','image','video','image','carousel',
+    'image','video','carousel','image','image',
+    'carousel','video','image','image','carousel',
+    'image','image','video','carousel','image','image'
+  ];
+  return types.map((type, i) => {
+    const seed = `${user}x${i}`;
+    const n = type === 'carousel' ? Math.floor(Math.random() * 4) + 2 : 1;
+    const dt = new Date(Date.now() - Math.random()*300*86400000);
+    return {
+      id: `p${i}`,
+      type,
+      thumb: `https://picsum.photos/seed/${seed}/400/400`,
+      media: Array.from({length: n}, (_, mi) => ({
+        url: `https://picsum.photos/seed/${seed}_${mi}/1080/1080`,
+        type: (type === 'video' && mi === 0) ? 'video' : (mi === n-1 && Math.random()>.8 ? 'video' : 'image'),
+        fname: `${user}_${i+1}_${mi+1}.jpg`
+      })),
+      ts: dt.toLocaleDateString('sk-SK')
+    };
+  });
+}
+
+function parseUsername(url) {
+  try {
+    const p = new URL(url.startsWith('http') ? url : 'https://'+url);
+    return p.pathname.split('/').filter(Boolean)[0] || url.replace(/^@/,'');
+  } catch { return url.replace(/.*instagram\.com\//,'').split('/')[0] || 'demo'; }
+}
+
+/* ═══════════════ PARSE ═══════════════ */
+async function startParse() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { showToast('⚠ Zadajte URL účtu'); return; }
+
+  const btn = document.getElementById('parseBtn');
+  btn.disabled = true; btn.textContent = 'Parsuje sa…';
+  setStatus('active','● parsovanie');
+  setProgress(15);
+  selected.clear();
+  posts = [];
+  updateBottom();
+
+  document.getElementById('mainArea').innerHTML =
+    '<div class="grid">' +
+    Array.from({length:21}, () => '<div class="skeleton"></div>').join('') +
+    '</div>';
+  document.getElementById('statsBar').style.display = 'none';
+
+  setProgress(40);
+  let data = null;
+  try {
+    const r = await fetch('/api/parse', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({url}),
+      signal: AbortSignal.timeout(4000)
+    });
+    if (r.ok) data = await r.json();
+  } catch {}
+
+  await sleep(1400);
+  setProgress(85);
+
+  account = data?.account || parseUsername(url);
+  posts = data?.posts || makePosts(account);
+
+  await sleep(300);
+  setProgress(100);
+  await sleep(200);
+  setProgress(0);
+
+  renderGrid();
+  const totalMedia = posts.reduce((s,p) => s+p.media.length, 0);
+  el('sAccount').textContent = '@'+account;
+  el('sTotal').textContent = posts.length;
+  el('sMedia').textContent = totalMedia;
+  el('statsBar').style.display = 'flex';
+  setStatus('done','✓ oparsované');
+  btn.disabled = false; btn.textContent = 'Parsovať';
+  showToast(`✓ Oparsovaných ${posts.length} príspevkov`);
+}
+
+/* ═══════════════ RENDER ═══════════════ */
+function renderGrid() {
+  el('mainArea').innerHTML =
+    `<div class="grid-meta">
+      <span>@${account} — ${posts.length} príspevkov</span>
+      <span>Kliknite na dlaždicu pre výber &nbsp;|&nbsp; Carousel ❑ = otvoriť sub-okno</span>
+    </div>
+    <div class="grid">${posts.map(tileFn).join('')}</div>`;
+}
+
+function tileFn(p) {
+  const selSet = selected.get(p.id) || new Set();
+  const isSel = selSet.size > 0;
+  const selCount = selSet.size;
+  let badge = '';
+  if (p.type === 'video') badge = '<span class="type-badge badge-video">▶ VID</span>';
+  if (p.type === 'carousel') badge = `<span class="type-badge badge-carousel">❑ ${p.media.length}</span>`;
+  return `<div class="tile${isSel?' selected':''}" id="t_${p.id}" onclick="tileClick('${p.id}')">
+    <img src="${p.thumb}" loading="lazy" alt="">
+    <div class="tile-overlay"><div class="check-icon"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="3,8 7,12 13,4"/></svg></div></div>
+    ${badge}
+    <div class="tile-sel-count">${selCount > 1 ? selCount+'×' : '✓'}</div>
+  </div>`;
+}
+
+function refreshTile(postId) {
+  const p = posts.find(x => x.id === postId);
+  if (!p) return;
+  const old = document.getElementById('t_'+postId);
+  if (!old) return;
+  old.outerHTML = tileFn(p);
+  // reattach (querySelector because outerHTML replaced the element)
+}
+
+/* ═══════════════ TILE CLICK ═══════════════ */
+function tileClick(postId) {
+  const p = posts.find(x => x.id === postId);
+  if (!p) return;
+  if (p.type === 'carousel') { openModal(p); return; }
+  // toggle single
+  if (!selected.has(postId)) selected.set(postId, new Set());
+  const s = selected.get(postId);
+  s.has(0) ? s.delete(0) : s.add(0);
+  if (s.size === 0) selected.delete(postId);
+  refreshTile(postId);
+  updateBottom(); updateStats();
+}
+
+/* ═══════════════ SELECT ALL / CLEAR ═══════════════ */
+function selectAll() {
+  posts.forEach(p => {
+    const s = new Set(p.media.map((_,i)=>i));
+    selected.set(p.id, s);
+  });
+  renderGrid(); updateBottom(); updateStats();
+}
+function clearSelection() {
+  selected.clear();
+  renderGrid(); updateBottom(); updateStats();
+}
+
+/* ═══════════════ MODAL ═══════════════ */
+function openModal(p) {
+  activePostId = p.id;
+  el('mTitle').textContent = `Carousel — ${p.media.length} médií`;
+  el('mSub').textContent = `@${account} · ${p.ts}`;
+  el('mTotCount').textContent = p.media.length;
+  const selSet = selected.get(p.id) || new Set();
+  el('mGrid').innerHTML = p.media.map((m,i) => `
+    <div class="modal-item${selSet.has(i)?' selected':''}" id="mi_${i}" onclick="toggleMI(${i})">
+      <img src="${m.url}" loading="lazy" alt="">
+      ${m.type==='video'?'<span class="modal-vbadge">▶ VIDEO</span>':''}
+      <div class="modal-overlay"><div class="modal-check"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="3,8 7,12 13,4"/></svg></div></div>
+    </div>`).join('');
+  updateModalCount();
+  el('modalBackdrop').classList.add('open');
+}
+
+function toggleMI(i) {
+  if (!selected.has(activePostId)) selected.set(activePostId, new Set());
+  const s = selected.get(activePostId);
+  s.has(i) ? s.delete(i) : s.add(i);
+  el('mi_'+i).classList.toggle('selected', s.has(i));
+  updateModalCount();
+}
+
+function modalSelectAll() {
+  const p = posts.find(x => x.id === activePostId);
+  if (!p) return;
+  selected.set(activePostId, new Set(p.media.map((_,i)=>i)));
+  p.media.forEach((_,i) => el('mi_'+i)?.classList.add('selected'));
+  updateModalCount();
+}
+function modalClearAll() {
+  selected.set(activePostId, new Set());
+  document.querySelectorAll('[id^="mi_"]').forEach(e => e.classList.remove('selected'));
+  updateModalCount();
+}
+
+function updateModalCount() {
+  const s = selected.get(activePostId) || new Set();
+  el('mSelCount').textContent = s.size;
+}
+
+function closeModal() {
+  el('modalBackdrop').classList.remove('open');
+  if (activePostId) {
+    const s = selected.get(activePostId);
+    if (s && s.size === 0) selected.delete(activePostId);
+    refreshTile(activePostId);
+  }
+  updateBottom(); updateStats();
+  activePostId = null;
+}
+
+function bgClose(e) { if (e.target === el('modalBackdrop')) closeModal(); }
+
+/* ═══════════════ STATS / BOTTOM ═══════════════ */
+function totalSelected() {
+  let n = 0; selected.forEach(s => n += s.size); return n;
+}
+function updateStats() { el('sSelected').textContent = totalSelected(); }
+function updateBottom() {
+  const n = totalSelected();
+  el('bCount').textContent = n;
+  el('bottomBar').classList.toggle('visible', n > 0);
+  updateStats();
+}
+
+/* ═══════════════ DOWNLOAD ═══════════════ */
+async function downloadZip() {
+  const total = totalSelected();
+  if (!total) return;
+  const btn = el('dlBtn');
+  btn.disabled = true;
+  const zip = new JSZip();
+  const folder = zip.folder(account + '_parsed');
+  let done = 0;
+  let failed = 0;
+
+  for (const [pid, idxSet] of selected) {
+    const p = posts.find(x => x.id === pid);
+    if (!p) continue;
+    for (const idx of idxSet) {
+      const m = p.media[idx];
+      btn.innerHTML = `<span>Sťahujem… ${done+1}/${total}</span>`;
+
+      // Proxujeme cez backend — priamy fetch fbcdn.net vracia 12B bez Referera
+      const fetchUrl = m.url.includes('fbcdn.net') || m.url.includes('cdninstagram.com')
+        ? '/api/proxy?url=' + encodeURIComponent(m.url)
+        : m.url;
+
+      try {
+        const response = await fetch(fetchUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        if (blob.size < 1000) throw new Error(`Príliš malý súbor (${blob.size}B)`);
+        folder.file(m.fname, blob);
+      } catch (err) {
+        console.warn(`Preskočený ${m.fname}:`, err.message);
+        failed++;
+      }
+      done++;
+    }
+  }
+
+  btn.innerHTML = '<span>Generujem ZIP…</span>';
+  const blob = await zip.generateAsync({type:'blob'});
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: `${account}_parsed.zip`
+  });
+  a.click(); URL.revokeObjectURL(a.href);
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Stiahnuť .zip`;
+  showToast(failed > 0
+    ? `⚠ ZIP stiahnutý — ${done - failed} OK, ${failed} zlyhalo`
+    : `✓ Stiahnuté: ${account}_parsed.zip`
+  );
+}
+
+/* ═══════════════ HELPERS ═══════════════ */
+function el(id) { return document.getElementById(id); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function setStatus(cls, txt) {
+  const p = el('statusPill');
+  p.className = 'status-pill ' + cls;
+  p.textContent = txt;
+}
+function setProgress(pct) {
+  el('progressBar').style.width = pct === 0 ? '0%' : pct+'%';
+  el('progressBar').style.opacity = pct === 0 ? '0' : '1';
+}
+function showToast(msg) {
+  const t = el('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+el('urlInput').addEventListener('keydown', e => { if(e.key==='Enter') startParse(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+2026/04/24-12:49:00.295 d96f Reusing MANIFEST /home/lukas-dravecky/Documents/vscode/instaparser/backend/browser_profile/Default/Local Storage/leveldb/MANIFEST-000001
+2026/04/24-12:49:00.310 d96f Recovering log #17
+2026/04/24-12:49:00.311 d96f Level-0 table #19: started
+2026/04/24-12:49:00.316 d96f Level-0 table #19: 19589 bytes OK
+2026/04/24-12:49:00.316 d96f Recovering log #19
+2026/04/24-12:49:00.317 d96f Reusing old log /home/lukas-dravecky/Documents/vscode/instaparser/backend/browser_profile/Default/Local Storage/leveldb/000019.log 
+2026/04/24-12:49:00.322 d96f Delete type=0 #17
+2026/04/24-12:49:00.322 d96f Delete type=2 #20

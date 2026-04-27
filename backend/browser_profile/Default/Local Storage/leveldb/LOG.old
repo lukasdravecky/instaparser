@@ -1,0 +1,5 @@
+2026/04/24-12:31:29.952 cbc1 Reusing MANIFEST /home/lukas-dravecky/Documents/vscode/instaparser/backend/browser_profile/Default/Local Storage/leveldb/MANIFEST-000001
+2026/04/24-12:31:29.959 cbc1 Recovering log #17
+2026/04/24-12:31:29.960 cbc1 Reusing old log /home/lukas-dravecky/Documents/vscode/instaparser/backend/browser_profile/Default/Local Storage/leveldb/000017.log 
+2026/04/24-12:32:39.079 cbd5 Level-0 table #20: started
+2026/04/24-12:32:39.087 cbd5 Level-0 table #20: 19589 bytes OK

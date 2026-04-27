@@ -1,0 +1,6 @@
+2026/04/24-12:49:00.301 d971 Reusing MANIFEST /home/lukas-dravecky/Documents/vscode/instaparser/backend/browser_profile/Default/Service Worker/Database/MANIFEST-000001
+2026/04/24-12:49:00.309 d971 Recovering log #3
+2026/04/24-12:49:00.313 d971 Reusing old log /home/lukas-dravecky/Documents/vscode/instaparser/backend/browser_profile/Default/Service Worker/Database/000003.log 
+2026/04/24-12:49:25.844 d96f Level-0 table #5: started
+2026/04/24-12:49:25.850 d96f Level-0 table #5: 88717 bytes OK
+2026/04/24-12:49:25.860 d96f Delete type=0 #3
